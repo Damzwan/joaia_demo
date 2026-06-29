@@ -1,7 +1,7 @@
-import React, {forwardRef, useEffect, useImperativeHandle, useRef, useState} from "react";
+import React, {forwardRef, useCallback, useEffect, useImperativeHandle, useRef, useState} from "react";
 import {View, Text, ActivityIndicator, Image, Linking, TouchableOpacity} from "react-native";
 import {ScrollView} from "react-native-gesture-handler";
-import {BottomSheetModal, BottomSheetScrollView, useBottomSheetModal} from "@gorhom/bottom-sheet";
+import {BottomSheetModal, BottomSheetScrollView} from "@gorhom/bottom-sheet";
 import {
     X,
     ArrowLeft,
@@ -39,9 +39,10 @@ const PlaceDetailSheet = forwardRef<BottomSheetModal, SheetProps>(({onChange}, r
         present: () => innerRef.current?.present(),
         dismiss: () => innerRef.current?.dismiss(),
         snapToIndex: (index: number) => innerRef.current?.snapToIndex(index),
-    } as unknown as BottomSheetModal));
+    } as unknown as BottomSheetModal), []);
+    
+    const dismiss = useCallback(() => innerRef.current?.dismiss(), []);
 
-    const {dismiss} = useBottomSheetModal();
     const sheets = useSheets();
 
     const selectedPlaceId = useMapStore((s) => s.selectedPlaceId);
@@ -85,7 +86,11 @@ const PlaceDetailSheet = forwardRef<BottomSheetModal, SheetProps>(({onChange}, r
     const name = detail?.name ?? knownPlace?.name ?? "Place";
     const isFood = FOOD_CATEGORIES.has((detail?.category ?? knownPlace?.category ?? "").toLowerCase());
 
-    // Clean up all reference selections when closed completely
+    // Clean up all reference selections once the sheet has fully closed.
+    // Fires for every dismissal (X, swipe-down, back button) since it's wired to
+    // onDismiss. Safe to clear here because PlaceDetail is presented imperatively
+    // (openPlace → present()), not reactively off selectedPlaceId — so clearing
+    // the id can't bounce the sheet back open.
     const handleCloseCleanup = () => {
         setSelectedPlaceId(null);
         clearFocus();
@@ -131,7 +136,7 @@ const PlaceDetailSheet = forwardRef<BottomSheetModal, SheetProps>(({onChange}, r
             index={0}
             enableDynamicSizing={false}
             onChange={onChange}
-            // ✅ FIX: Triggers selection cleanup whenever closed or swiped down
+            // Triggers selection cleanup whenever closed or swiped down
             onDismiss={handleCloseCleanup}
             backgroundStyle={{backgroundColor: "#ffffff"}}
         >

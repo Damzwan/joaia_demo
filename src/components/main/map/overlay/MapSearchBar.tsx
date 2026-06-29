@@ -30,6 +30,7 @@ export default function MapSearchBar() {
 
     useEffect(() => {
         let alive = true;
+
         if (debounced.length < 2) {
             setLoading(false);
             setSearchResults([]);
@@ -37,6 +38,9 @@ export default function MapSearchBar() {
             sheets.closeSearchResults();
             return;
         }
+
+        sheets.closeSearchResults();
+
         setLoading(true);
         placesApi
             .search({
@@ -49,25 +53,19 @@ export default function MapSearchBar() {
                 if (!alive) return;
                 const valid = r.filter((p) => typeof p.latitude === "number" && typeof p.longitude === "number");
                 setSearchResults(valid);
-                if (valid.length) {
-                    setCameraTarget(centroid(valid));
-                    setShowSuggestion(true);
-                    sheets.closeSearchResults();
-                } else {
-                    setShowSuggestion(false);
-                    sheets.closeSearchResults();
-                }
+                setShowSuggestion(valid.length > 0);
+                if (valid.length) setCameraTarget(centroid(valid));
             })
             .catch(() => alive && setSearchResults([]))
             .finally(() => alive && setLoading(false));
+
         return () => {
             alive = false;
         };
-        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [debounced]);
 
     const clear = () => {
-        clearSearch()
+        clearSearch();
         setShowSuggestion(false);
         sheets.closeSearchResults();
     };
@@ -109,6 +107,8 @@ export default function MapSearchBar() {
                         placeholder="Search places in Zürich"
                         placeholderTextColor={MAP_COLORS.inkMuted}
                         returnKeyType="search"
+                        // isTopMatchExact still drives the Enter key: jump straight to the
+                        // place on a confident match, otherwise open the full list.
                         onSubmitEditing={isTopMatchExact ? handleSelectTopMatch : handleSeeAll}
                         style={{flex: 1, fontSize: 15, color: MAP_COLORS.ink, padding: 0}}
                     />
@@ -154,7 +154,12 @@ export default function MapSearchBar() {
                             </View>
                         </TouchableOpacity>
 
-                        {results.length > 1 && !isTopMatchExact && (
+                        {/* "See all" now depends ONLY on there being more than one result.
+                            It used to also require !isTopMatchExact, so a loose substring
+                            match on the top result (e.g. "café" matching "Café Schober")
+                            hid the row even when 7 other results existed. Browsing the full
+                            list must always be reachable when there's more than one hit. */}
+                        {results.length > 1 && (
                             <>
                                 <View style={{
                                     height: 1,
