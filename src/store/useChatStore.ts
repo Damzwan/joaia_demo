@@ -1,11 +1,11 @@
-import { create } from "zustand";
-import { chatApi } from "@/api/chat.api";
-import { initialMessages, SEED_PLACES_MESSAGE_ID } from "@/constants/chat.constants";
-import { EXPLORE_POIS } from "@/constants/explore.constants";
-import { useMapStore } from "@/store/useMapStore";
-import { Tour } from "@/types/chat/entities.types";
-import { ChatMessage } from "@/types/chat/chat.types";
-import { Place } from "@/types/map/map.types";
+import {create} from "zustand";
+import {chatApi} from "@/api/chat.api";
+import {initialMessages, SEED_PLACES_MESSAGE_ID} from "@/constants/chat.constants";
+import {EXPLORE_POIS} from "@/constants/explore.constants";
+import {useMapStore} from "@/store/useMapStore";
+import {Tour} from "@/types/chat/entities.types";
+import {ChatMessage} from "@/types/chat/chat.types";
+import {Place} from "@/types/map/map.types";
 
 type Status = "idle" | "thinking" | "error";
 
@@ -36,20 +36,20 @@ export const useChatStore = create<ChatState & ChatActions>((set, get) => ({
     status: "idle",
     error: null,
 
-    setDraft: (text) => set({ draft: text }),
+    setDraft: (text) => set({draft: text}),
 
     send: async (override) => {
         const text = (override ?? get().draft).trim();
         if (!text || get().status === "thinking") return;
 
-        const userMsg: ChatMessage = { id: uid(), kind: "text", role: "user", createdAt: Date.now(), text };
+        const userMsg: ChatMessage = {id: uid(), kind: "text", role: "user", createdAt: Date.now(), text};
         const pendingId = uid();
 
         set((s) => ({
             messages: [
                 ...s.messages,
                 userMsg,
-                { id: pendingId, kind: "text", role: "guide", createdAt: Date.now(), text: "", pending: true },
+                {id: pendingId, kind: "text", role: "guide", createdAt: Date.now(), text: "", pending: true},
             ],
             draft: override ? s.draft : "",
             status: "thinking",
@@ -59,7 +59,7 @@ export const useChatStore = create<ChatState & ChatActions>((set, get) => ({
         try {
             const history = get().messages.filter((m) => m.id !== pendingId);
             const replies = await chatApi.sendMessage(history);
-            set((s) => ({ messages: [...s.messages.filter((m) => m.id !== pendingId), ...replies], status: "idle" }));
+            set((s) => ({messages: [...s.messages.filter((m) => m.id !== pendingId), ...replies], status: "idle"}));
 
             const fresh = collectPlaces(replies);
             const map = useMapStore.getState();
@@ -82,7 +82,7 @@ export const useChatStore = create<ChatState & ChatActions>((set, get) => ({
     answerTrivia: (messageId, optionIndex) =>
         set((s) => ({
             messages: s.messages.map((m) =>
-                m.id === messageId && m.kind === "trivia" ? { ...m, selectedIndex: optionIndex } : m
+                m.id === messageId && m.kind === "trivia" ? {...m, selectedIndex: optionIndex} : m
             ),
         })),
 
@@ -90,7 +90,7 @@ export const useChatStore = create<ChatState & ChatActions>((set, get) => ({
         set((s) => ({
             messages: [
                 ...s.messages,
-                { id: uid(), kind: "tourConfirmed", role: "guide", personaId: "guideMaker", createdAt: Date.now(), tour },
+                {id: uid(), kind: "tourConfirmed", role: "guide", personaId: "guideMaker", createdAt: Date.now(), tour},
             ],
         }));
     },
@@ -99,7 +99,7 @@ export const useChatStore = create<ChatState & ChatActions>((set, get) => ({
         set((s) => ({
             messages: [
                 ...s.messages,
-                { id: uid(), kind: "placeAdded", role: "guide", personaId: "guideMaker", createdAt: Date.now(), place },
+                {id: uid(), kind: "placeAdded", role: "guide", personaId: "guideMaker", createdAt: Date.now(), place},
             ],
         }));
     },
@@ -119,7 +119,7 @@ export const useChatStore = create<ChatState & ChatActions>((set, get) => ({
         const next = places.slice(0, 3);
         set((s) => ({
             messages: s.messages.map((m) =>
-                m.id === SEED_PLACES_MESSAGE_ID && m.kind === "places" ? { ...m, places: next} : m
+                m.id === SEED_PLACES_MESSAGE_ID && m.kind === "places" ? {...m, places: next} : m
             ),
         }));
     },

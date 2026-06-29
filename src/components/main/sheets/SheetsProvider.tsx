@@ -1,5 +1,4 @@
-import React, {createContext, useContext, useRef, useState, useMemo, useCallback} from "react";
-import {Dimensions} from "react-native";
+import React, {createContext, useContext, useMemo, useRef, useState} from "react";
 import BottomSheet, {BottomSheetModal} from "@gorhom/bottom-sheet";
 import {useChatStore} from "@/store/useChatStore";
 import {PlaceOrigin, useMapStore} from "@/store/useMapStore";
@@ -35,9 +34,6 @@ export function useSheets() {
     if (!context) throw new Error("useSheets must be used within a <SheetsProvider />");
     return context;
 }
-
-const SHEET_COVERAGE = {plan: 0.55, place: 0.45, figure: 0.45, search: 0.45} as const;
-const SCREEN_H = Dimensions.get("window").height;
 
 export function SheetsProvider({children}: { children: React.ReactNode }) {
     const chatSheetRef = useRef<BottomSheet>(null);

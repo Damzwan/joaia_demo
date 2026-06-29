@@ -1,4 +1,4 @@
-import React, {memo} from "react";
+import React, {memo, useCallback} from "react";
 import {Marker} from "react-native-maps";
 import {MAP_COLORS} from "@/constants/map.constants";
 import {Place} from "@/types/map/map.types";
@@ -28,23 +28,26 @@ const Z_INDEX_MAP: Record<MarkerVariant, number> = {
     route: 10,
     search: 8,
     suggestion: 4,
-    ambient: 1
+    ambient: 1,
 };
 
 function MapMarker({place, variant, order, focused = false, onPress}: Props) {
     const hasPhoto = (variant === "route" || variant === "preview") && !!place.thumbnail;
 
-    const {tracks, onImageLoad} = useMarkerTracking(variant, order, focused, hasPhoto);
+    const {tracks, onImageLoad} = useMarkerTracking({variant, order, focused, hasImage: hasPhoto});
 
     const color = VARIANT_COLOR[variant];
     const photoSize = focused ? 54 : variant === "preview" ? 40 : 44;
     const baseZ = focused ? 990 : Z_INDEX_MAP[variant];
     const coordinate = {latitude: place.latitude, longitude: place.longitude};
 
-    const handlePress = (e: any) => {
-        e.stopPropagation?.();
-        onPress(place);
-    };
+    const handlePress = useCallback(
+        (e: any) => {
+            e?.stopPropagation?.();
+            onPress(place);
+        },
+        [onPress, place]
+    );
 
     if (hasPhoto && place.thumbnail) {
         return (

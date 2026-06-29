@@ -1,10 +1,11 @@
-import { create } from "zustand";
-import type { LatLng } from "@/api/routes.api";
-import { routesApi } from "@/api/routes.api";
-import { placesApi } from "@/api/places.api";
-import { EXPLORE_POIS } from "@/constants/explore.constants";
-import { Place } from "@/types/map/map.types";
-import { Tour, TourStop } from "@/types/chat/entities.types";
+import {create} from "zustand";
+import type {LatLng} from "@/api/routes.api";
+import {routesApi} from "@/api/routes.api";
+import {placesApi} from "@/api/places.api";
+import {EXPLORE_POIS} from "@/constants/explore.constants";
+import {Place} from "@/types/map/map.types";
+import {Tour, TourStop} from "@/types/chat/entities.types";
+import {useChatStore} from "@/store/useChatStore";
 
 export type MapMode = "plan" | "explore";
 export type PlaceOrigin = "map" | "search" | "plan";
@@ -15,7 +16,7 @@ const toLatLng = (p: { latitude: number; longitude: number }): LatLng => ({
 });
 
 const uid = () => `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
-const renumber = (stops: TourStop[]): TourStop[] => stops.map((st, i) => ({ ...st, order: i + 1 }));
+const renumber = (stops: TourStop[]): TourStop[] => stops.map((st, i) => ({...st, order: i + 1}));
 
 let planToken = 0;
 let previewToken = 0;
@@ -59,9 +60,8 @@ interface MapActions {
     setCurrentRegion: (region: LatLng | null) => void;
     setCameraTarget: (coords: LatLng) => void;
 
-    // Plan Management Actions (Moved from Chat Store)
     chooseTour: (tour: Tour) => void;
-    addPlaceToTour: (place: Place) => boolean; // Returns true if added successfully
+    addPlaceToTour: (place: Place) => boolean;
     removeTourStop: (placeId: string) => void;
     reorderPlan: (stops: TourStop[]) => void;
     clearPlan: () => void;
@@ -102,14 +102,14 @@ export const useMapStore = create<MapState & MapActions>((set, get) => ({
     placeOrigin: "map",
     currentRegion: null,
 
-    setSelectedPlaceId: (id) => set({ selectedPlaceId: id }),
-    setSelectedFigureId: (id) => set({ selectedFigureId: id }),
-    setFocusedPlaceId: (id) => set({ focusedPlaceId: id }),
-    setMapMode: (mode) => set({ mapMode: mode }),
-    setBottomInset: (px) => set({ bottomInset: px }),
-    setPlaceOrigin: (origin) => set({ placeOrigin: origin }),
-    setCurrentRegion: (region) => set({ currentRegion: region }),
-    setCameraTarget: (coords) => set({ cameraTarget: coords, fitCoordinates: null }),
+    setSelectedPlaceId: (id) => set({selectedPlaceId: id}),
+    setSelectedFigureId: (id) => set({selectedFigureId: id}),
+    setFocusedPlaceId: (id) => set({focusedPlaceId: id}),
+    setMapMode: (mode) => set({mapMode: mode}),
+    setBottomInset: (px) => set({bottomInset: px}),
+    setPlaceOrigin: (origin) => set({placeOrigin: origin}),
+    setCurrentRegion: (region) => set({currentRegion: region}),
+    setCameraTarget: (coords) => set({cameraTarget: coords, fitCoordinates: null}),
 
     chooseTour: (tour) => {
         const plan: Tour = {
@@ -131,15 +131,18 @@ export const useMapStore = create<MapState & MapActions>((set, get) => ({
         });
 
         get().syncPlanRoute(plan.stops);
+
+        // ✅ Trigger the confirmed tour message in chat
+        useChatStore.getState().confirmTourInChat(plan);
     },
 
     addPlaceToTour: (place) => {
-        const { plan } = get();
+        const {plan} = get();
         if (plan?.stops.some((st) => st.place.id === place.id)) return false;
 
         const newPlan: Tour = plan
-            ? { ...plan, stops: [...plan.stops, { order: plan.stops.length + 1, place, note: place.note }] }
-            : { id: uid(), title: "My Zürich plan", stops: [{ order: 1, place, note: place.note }] };
+            ? {...plan, stops: [...plan.stops, {order: plan.stops.length + 1, place, note: place.note}]}
+            : {id: uid(), title: "My Zürich plan", stops: [{order: 1, place, note: place.note}]};
 
         set({
             plan: newPlan,
@@ -151,30 +154,32 @@ export const useMapStore = create<MapState & MapActions>((set, get) => ({
         });
 
         get().syncPlanRoute(newPlan.stops);
+
+        useChatStore.getState().confirmPlaceAddedInChat(place);
         return true;
     },
 
     removeTourStop: (placeId) => {
-        const { plan } = get();
+        const {plan} = get();
         if (!plan) return;
 
         const stops = renumber(plan.stops.filter((st) => st.place.id !== placeId));
-        set({ plan: stops.length ? { ...plan, stops } : null });
+        set({plan: stops.length ? {...plan, stops} : null});
         get().syncPlanRoute(stops);
     },
 
     reorderPlan: (stops) => {
-        const { plan } = get();
+        const {plan} = get();
         if (!plan) return;
 
         const next = renumber(stops);
-        set({ plan: { ...plan, stops: next } });
+        set({plan: {...plan, stops: next}});
         get().syncPlanRoute(next);
     },
 
     clearPlan: () => {
         planToken++;
-        set({ plan: null, routePath: null, focusedPlaceId: null, selectedPlaceId: null });
+        set({plan: null, routePath: null, focusedPlaceId: null, selectedPlaceId: null});
     },
 
     focusPlace: (place) =>
@@ -188,24 +193,24 @@ export const useMapStore = create<MapState & MapActions>((set, get) => ({
 
     fitPlaces: (places) => {
         if (!places.length) return;
-        set({ fitCoordinates: places.map(toLatLng), cameraTarget: null });
+        set({fitCoordinates: places.map(toLatLng), cameraTarget: null});
     },
 
-    clearFocus: () => set({ focusedPlaceId: null, selectedPlaceId: null }),
+    clearFocus: () => set({focusedPlaceId: null, selectedPlaceId: null}),
 
     syncPlanRoute: async (stops) => {
         const token = ++planToken;
         if (!stops.length) {
-            set({ routePath: null });
+            set({routePath: null});
             return;
         }
         const path = await fetchRoute(stops);
-        if (token === planToken) set({ routePath: path });
+        if (token === planToken) set({routePath: path});
     },
 
     clearPlanRoute: () => {
         planToken++;
-        set({ routePath: null });
+        set({routePath: null});
     },
 
     showPreview: async (tour, group) => {
@@ -220,7 +225,7 @@ export const useMapStore = create<MapState & MapActions>((set, get) => ({
         const token = ++previewToken;
         const path = await fetchRoute(tour.stops);
         if (token === previewToken && get().previewTour?.id === tour.id) {
-            set({ previewRoutePath: path });
+            set({previewRoutePath: path});
         }
     },
 
@@ -234,18 +239,18 @@ export const useMapStore = create<MapState & MapActions>((set, get) => ({
         const token = ++previewToken;
         const path = await fetchRoute(tour.stops);
         if (token === previewToken && get().previewTour?.id === tour.id) {
-            set({ previewRoutePath: path });
+            set({previewRoutePath: path});
         }
     },
 
     clearPreview: () => {
         previewToken++;
-        set({ previewTours: [], previewTour: null, previewRoutePath: null });
+        set({previewTours: [], previewTour: null, previewRoutePath: null});
     },
 
-    setSearchResults: (places) => set({ searchResults: places }),
-    setSearchQuery: (q) => set({ searchQuery: q }),
-    clearSearch: () => set({ searchResults: [], searchQuery: "" }),
+    setSearchResults: (places) => set({searchResults: places}),
+    setSearchQuery: (q) => set({searchQuery: q}),
+    clearSearch: () => set({searchResults: [], searchQuery: ""}),
 
     resetMapState: () => {
         planToken++;
@@ -273,13 +278,13 @@ export const useMapStore = create<MapState & MapActions>((set, get) => ({
         const state = get();
         if (state.exploreLoading) return;
         if (state.exploreLoaded && !force) return;
-        set({ exploreLoading: true });
+        set({exploreLoading: true});
         try {
             const places = await placesApi.getExplore();
-            set({ explore: places?.length ? places : EXPLORE_POIS, exploreLoaded: true, exploreLoading: false });
+            set({explore: places?.length ? places : EXPLORE_POIS, exploreLoaded: true, exploreLoading: false});
         } catch (err) {
             console.warn("[map] explore preload failed", err);
-            set({ explore: EXPLORE_POIS, exploreLoaded: true, exploreLoading: false });
+            set({explore: EXPLORE_POIS, exploreLoaded: true, exploreLoading: false});
         }
     },
 }));

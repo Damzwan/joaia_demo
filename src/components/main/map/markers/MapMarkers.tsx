@@ -12,7 +12,6 @@ interface Props {
 
 export default function MapMarkers({tiers, focusedPlaceId, onPressPlace}: Props) {
     const {ambient, routeStops, searchResults, forcedFocusPlace} = tiers;
-    const mapMode = useMapStore((s) => s.mapMode);
     const previewTour = useMapStore((s) => s.previewTour);
 
     return (
@@ -36,7 +35,6 @@ export default function MapMarkers({tiers, focusedPlaceId, onPressPlace}: Props)
                     onPress={onPressPlace}
                 />
             ))}
-
 
             {searchResults.map((p) => (
                 <MapMarker

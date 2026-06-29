@@ -26,7 +26,6 @@ const ChatSheet = forwardRef<BottomSheet, { onChange?: (index: number) => void }
         const flatListRef = useRef<BottomSheetFlatListMethods>(null);
         const localRef = useRef<BottomSheet>(null);
 
-        // Optimized ref merger
         const setRefs = useCallback(
             (node: BottomSheet | null) => {
                 localRef.current = node;

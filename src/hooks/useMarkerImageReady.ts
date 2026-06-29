@@ -1,34 +1,38 @@
-import {useState, useEffect} from "react";
+import {useCallback, useEffect, useRef, useState} from "react";
 
-export function useMarkerTracking(variant: string, order?: number, focused?: boolean, hasImage?: boolean) {
-    const [imageReady, setImageReady] = useState(!hasImage);
+interface UseMarkerTrackingProps {
+    variant: string;
+    order?: number;
+    focused?: boolean;
+    hasImage?: boolean;
+}
+
+
+export function useMarkerTracking({variant, order, focused, hasImage}: UseMarkerTrackingProps) {
     const [tracks, setTracks] = useState(true);
+    const raf1 = useRef<number | null>(null);
+    const raf2 = useRef<number | null>(null);
 
-    useEffect(() => {
+    const cancel = useCallback(() => {
+        if (raf1.current != null) cancelAnimationFrame(raf1.current);
+        if (raf2.current != null) cancelAnimationFrame(raf2.current);
+        raf1.current = raf2.current = null;
+    }, []);
+
+    const settle = useCallback(() => {
+        cancel();
         setTracks(true);
-        if (hasImage) setImageReady(false);
-    }, [variant, order, focused, hasImage]);
+        raf1.current = requestAnimationFrame(() => {
+            raf2.current = requestAnimationFrame(() => setTracks(false));
+        });
+    }, [cancel]);
 
     useEffect(() => {
-        if (!tracks || !imageReady) return;
-        const id = setTimeout(() => setTracks(false), 500);
-        return () => clearTimeout(id);
-    }, [tracks, imageReady]);
+        settle();
+        return cancel;
+    }, [variant, order, focused, hasImage, settle, cancel]);
 
-    // Safety timeout to forcefully shut down tracking loops even if image loads hang
-    useEffect(() => {
-        if (!tracks) return;
-        const id = setTimeout(() => setTracks(false), 1500);
-        return () => clearTimeout(id);
-    }, [tracks]);
+    const onImageLoad = useCallback(() => settle(), [settle]);
 
-    return {
-        tracks,
-        imageReady,
-        onImageLoad: () => {
-            requestAnimationFrame(() => {
-                setTimeout(() => setImageReady(true), 200);
-            });
-        }
-    };
+    return {tracks, onImageLoad};
 }
