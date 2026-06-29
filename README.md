@@ -20,10 +20,9 @@ EXPO_PUBLIC_BACKEND_URL=YOUR_KEY
 ANDROID_GOOGLE_MAPS_API_KEY=YOUR_KEY
 ```
 
-### 1. Clone & Install Dependencies
+### 3. Start
 
 ```bash
-# Install packages using Bun
 bun start
 ```
 
