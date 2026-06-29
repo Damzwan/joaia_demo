@@ -1,0 +1,1 @@
+export const TINT = "#0F766E";

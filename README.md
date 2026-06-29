@@ -1,56 +1,55 @@
-# Welcome to your Expo app 👋
+# Joaia Demo
 
-This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
+An AI tour guide app made with expo. Hardcoded for Zurich :)
 
-## Get started
+## Quick Start
 
-1. Install dependencies
-
-   ```bash
-   npm install
-   ```
-
-2. Start the app
-
-   ```bash
-   npx expo start
-   ```
-
-In the output, you'll find options to open the app in a
-
-- [development build](https://docs.expo.dev/develop/development-builds/introduction/)
-- [Android emulator](https://docs.expo.dev/workflow/android-studio-emulator/)
-- [iOS simulator](https://docs.expo.dev/workflow/ios-simulator/)
-- [Expo Go](https://expo.dev/go), a limited sandbox for trying out app development with Expo
-
-You can start developing by editing the files inside the **app** directory. This project uses [file-based routing](https://docs.expo.dev/router/introduction).
-
-## Get a fresh project
-
-When you're ready, run:
+### 1. Clone & Install Dependencies
 
 ```bash
-npm run reset-project
+# Install packages using Bun
+bun install
 ```
 
-This command will move the starter code to the **app-example** directory and create a blank **app** directory where you can start developing.
+### 2. Configure Environment Variables
 
-### Other setup steps
+Create a .env file in the root directory
 
-- To set up ESLint for linting, run `npx expo lint`, or follow our guide on ["Using ESLint and Prettier"](https://docs.expo.dev/guides/using-eslint/)
-- If you'd like to set up unit testing, follow our guide on ["Unit Testing with Jest"](https://docs.expo.dev/develop/unit-testing/)
-- Learn more about the TypeScript setup in this template in our guide on ["Using TypeScript"](https://docs.expo.dev/guides/typescript/)
+```bash
+EXPO_PUBLIC_BACKEND_URL=YOUR_KEY
+ANDROID_GOOGLE_MAPS_API_KEY=YOUR_KEY
+```
 
-## Learn more
+### 1. Clone & Install Dependencies
 
-To learn more about developing your project with Expo, look at the following resources:
+```bash
+# Install packages using Bun
+bun start
+```
 
-- [Expo documentation](https://docs.expo.dev/): Learn fundamentals, or go into advanced topics with our [guides](https://docs.expo.dev/guides).
-- [Learn Expo tutorial](https://docs.expo.dev/tutorial/introduction/): Follow a step-by-step tutorial where you'll create a project that runs on Android, iOS, and the web.
+## Architecture overview
 
-## Join the community
+### Map & Spatial Engine (react-native-maps)
 
-Join our community of developers creating universal apps.
+- Uses native react-native-maps components (Polyline paths, custom MapMarker states, bounds, padding)
+- Zustand Map Store: Holds spatial data (itinerary plan, routing paths, explore items, search results, viewfinder
+  coordinates)
+- Camera Control (useMapController): Hook that managed automated panning, zooming of map
 
-- [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
-- [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.
+### Conversational Experience
+
+- Typed Message Unions: Uses rigid discriminated union payloads with conditional rendering to map complex server
+  structures into custom message UI blocks.
+- CTA Chips (Quick Actions): appends proactive response chips to the end of every message, ensuring continuous
+  engagement without text entry.
+- Resiliency States: Built-in error handling with explicit loading cues, empty state layouts, and a dedicated message
+  retry pipeline.
+
+### Bottom Sheets Layout
+
+Coordinates multiple contextual sheets overlaying the map canvas for a smooth and fun experience:
+
+- figureSheet: historical background on figures who shaped the city.
+- placeDetailSheet: Live information (reviews, hours, price levels) with direct add-to-plan links.
+- planSheet: The current live itinerary, showing stop sequence orders and personal route notes.
+- searchResultSheet: Lists active local queries with direct interaction gateways back into place cards.
