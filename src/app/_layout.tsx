@@ -3,19 +3,16 @@ import {Stack} from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
 import {StatusBar} from "expo-status-bar";
 
-import {
-    useFonts,
-    BricolageGrotesque_700Bold,
-} from "@expo-google-fonts/bricolage-grotesque";
-
-import "../global.css";
-import {useAuthStore} from "@/store/useAuthStore";
+import {useFonts, BricolageGrotesque_700Bold} from "@expo-google-fonts/bricolage-grotesque";
 import {
     PlusJakartaSans_400Regular,
     PlusJakartaSans_500Medium,
     PlusJakartaSans_600SemiBold
 } from "@expo-google-fonts/plus-jakarta-sans";
 import {SpaceMono_400Regular} from "@expo-google-fonts/space-mono";
+
+import "../global.css";
+import {useAuthStore} from "@/store/useAuthStore";
 
 void SplashScreen.preventAutoHideAsync();
 
@@ -34,10 +31,12 @@ export default function RootLayout() {
     }, []);
 
     useEffect(() => {
-        if (fontsLoaded || fontError) {
+        const assetsReady = fontsLoaded || fontError;
+
+        if (assetsReady && isInitialized) {
             void SplashScreen.hideAsync();
         }
-    }, [fontsLoaded, fontError]);
+    }, [fontsLoaded, fontError, isInitialized]);
 
     if (!fontsLoaded || !isInitialized) return null;
 
